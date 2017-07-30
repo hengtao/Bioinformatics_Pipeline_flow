@@ -37,12 +37,12 @@ my ($string1,$string2,$ID,$SM,$PU,$LB);
 $SM=$ID=$ARGV[0];
 my $PL="Illumina";
 
-my $outputPath="/opt/mnt/biogfs2/wanghengtao/lung_results";
-my $HOME="/opt/mnt/biogfs2/wanghengtao";
+my $outputPath="/mnt/gennlife/Ucloud_test/test_results";
+my $HOME="/home/bio";
 my $logPath="$outputPath/0-LOG";
-my $toolsPath="/opt/mnt/bio_tools/bio/tool";
-my $metadataPath="/opt/mnt/biogfs2/bio/data";
-my $Fq_position="/opt/mnt/biogfs2/wanghengtao";
+my $toolsPath="/opt/mnt/bio_tools";
+my $metadataPath="/mnt/gennlife/data/Bio_data";
+my $Fq_position="/mnt/gennlife/copy_to_ucloud";
 
 
 
@@ -66,7 +66,7 @@ if(!-e "$outputPath/0-FASTQC"){
 if(!-e "$outputPath/1-SPLIT/$SM"){
 	mkpath("$outputPath/1-SPLIT/$SM",0644);
 	if($@){
-		print "Make path $outputPath/1-SPLIT failed\n";
+		print "Make path $outputPath/1-SPLIT/$SM failed\n";
 		exit(1);
 	}
 }
@@ -114,48 +114,56 @@ if(!-e "$outputPath/6-HsMetrics/"){
 	}
 }
 
+if(!-e "$outputPath/7-Mutect2/"){
+	mkpath("$outputPath/7-Mutect2/",0644);
+	if($@){
+		print "Make path $outputPath/7-Mutect2/ failed\n";
+		exit(1);
+	}
+}
+
 
 
 my $FASTQC = "$toolsPath/FastQC/fastqc";
-my $BWA = "$toolsPath/bwa-0.7.15/bwa";
-my $SAMTOOLS = "$toolsPath/samtools-1.3.1/samtools";
-my $PICARDJAR="$toolsPath/picard/picard.jar";
-my $GATKJAR="$toolsPath/GenomeAnalysisTK-3.5/GenomeAnalysisTK.jar";
-my $VARSCANJAR="$toolsPath/Varscan";
+my $BWA = "$toolsPath/bwa-0.7.12/bwa";
+my $SAMTOOLS = "$toolsPath/samtools-1.3/samtools";
+my $PICARDJAR="$toolsPath/picard-tools-1.141/picard.jar";
+my $GATKJAR="$toolsPath/GenomeAnalysisTK/GenomeAnalysisTK.jar";
+
 
 
 my $hgRef="$metadataPath/hg19";
-my $known1000G_indels="$metadataPath/gatk/2.8/hg19/1000G_phase1.indels.hg19.sites.vcf";
-my $GoldStandard_indels="$metadataPath/gatk/2.8/hg19/Mills_and_1000G_gold_standard.indels.hg19.sites.vcf";
-my $dbSNP="$metadataPath/gatk/2.8/hg19/dbsnp_138.hg19.vcf";
-my $IntervalList="/opt/mnt/biogfs2/bio/data/TargetRegion_bed/Agilent_exome_SureSelectv6/S07504514.interval_list";
+my $known1000G_indels="$metadataPath/gatk/1000G_phase1.indels.hg19.sites.vcf";
+my $GoldStandard_indels="$metadataPath/gatk/Mills_and_1000G_gold_standard.indels.hg19.sites.vcf";
+my $dbSNP="$metadataPath/gatk/dbsnp_138.hg19.vcf";
+my ${targets_interval_list}="$metadataPath/S07504514.interval_list";
 
 
-my $file1=$ARGV[0]."_1.fq.gz";
-my $file2=$ARGV[0]."_2.fq.gz";
+my $file1=$ARGV[0]."_R1.fq.gz";
+my $file2=$ARGV[0]."_R2.fq.gz";
 
-if (-e $Fq_position/$ARGV[0]/$file1) 
+if (-e "$Fq_position/$file1") 
 { 
-    system "fastqc -o $outputPath/0-FASTQC  $Fq_position/$ARGV[0]/${ARGV[0]}_1.fq.gz";
+    system "fastqc -o $outputPath/0-FASTQC  $Fq_position/${ARGV[0]}_R1.fq.gz";
     system "echo fastqc finished for $ARGV[0]  >>  $ARGV[0]\.log";
-    open (IN1, "gzip -dc $Fq_position/$ARGV[0]/$ARGV[0]_1.fq.gz  | ") || die "$!\tthis file not exists!\n"; 
+    open (IN1, "gzip -dc $Fq_position/$ARGV[0]_R1.fq.gz  | ") || die "$!\tthis file not exists!\n"; 
 }else
 {
-    system "fastqc -o $outputPath/0-FASTQC  $Fq_position/$ARGV[0]/${ARGV[0]}_1.fq";
+    system "fastqc -o $outputPath/0-FASTQC  $Fq_position/$ARGV[0]/${ARGV[0]}_R1.fq";
     system "echo fastqc finished for $ARGV[0]  >>  $ARGV[0]\.log";
-    open (IN1, "$Fq_position/$ARGV[0]/$ARGV[0]_1.fq") || die "$!\tthis file not exists!!\n";
+    open (IN1, "$Fq_position/$ARGV[0]/$ARGV[0]_R1.fq") || die "$!\tthis file not exists!!\n";
 }
 
-if (-e $Fq_position/$ARGV[0]/$file2) 
+if (-e "$Fq_position/$file2") 
 { 
-    system "fastqc -o $outputPath/0-FASTQC  $Fq_position/$ARGV[0]/${ARGV[0]}_2.fq.gz";
+    system "fastqc -o $outputPath/0-FASTQC  $Fq_position/${ARGV[0]}_R2.fq.gz";
     system "echo fastqc finished for $ARGV[0]  >>  $ARGV[0]\.log";
-    open (IN2, "gzip -dc $Fq_position/$ARGV[0]/$ARGV[0]_2.fq.gz  | ") || die "$!\tthis file not exists!!!\n"; 
+    open (IN2, "gzip -dc $Fq_position/$ARGV[0]_R2.fq.gz  | ") || die "$!\tthis file not exists!!!\n"; 
 }else 
 {
-    system "fastqc -o $outputPath/0-FASTQC  $Fq_position/$ARGV[0]/${ARGV[0]}_2.fq";
+    system "fastqc -o $outputPath/0-FASTQC  $Fq_position/$ARGV[0]/${ARGV[0]}_R2.fq";
     system "echo fastqc finished for $ARGV[0]  >>  $ARGV[0]\.log";
-    open (IN2, "$Fq_position/$ARGV[0]/$ARGV[0]_2.fq") || die "$!\tthis file not exists!!!!\n";
+    open (IN2, "$Fq_position/$ARGV[0]/$ARGV[0]_R2.fq") || die "$!\tthis file not exists!!!!\n";
 }
 
 
@@ -219,24 +227,24 @@ while (defined $line1)
         {
             
             close $new1;
-		        close $new2;
+	    close $new2;
             
-            system "bwa mem -t 2 -R '\@RG\\tID:$ID\\tSM:$SM\\tPU:$PU_old\\tLB:$LB_old\\tPL:$PL' -M $hgRef/hg19 $outputPath/1-SPLIT/$SM/${DI_old}.1.fq   $outputPath/1-SPLIT/$SM/${DI_old}.2.fq | samtools view -bS -o $outputPath/2-MAPPING/${SM}.${DI_old}.bam - >> $logPath/${SM}.${DI_old}.bwa.log ";
+            system "bwa mem -t 2 -R '\@RG\\tID:$DI_old\\tSM:$SM\\tPU:$PU_old\\tLB:$LB_old\\tPL:$PL' -M $hgRef/hg19.fa $outputPath/1-SPLIT/$SM/${DI_old}.1.fq   $outputPath/1-SPLIT/$SM/${DI_old}.2.fq | samtools view -bS -o $outputPath/2-MAPPING/${SM}.${DI_old}.bam -";
             #system "samtools view -bS -o $outputPath/2-MAPPING/${SM}.${DI_old}.bam $outputPath/2-MAPPING/${SM}.${DI_old}.sam >> $logPath/${SM}.${DI_old}.bwa.log";
             system "echo \"bwa finished for $SM $DI_old\" >>  $logPath/$SM\.log";
             system "echo `date` >> $logPath/$SM\.log";
             
-            system "samtools sort  $outputPath/2-MAPPING/${SM}.${DI_old}.bam -T $outputPath/2-MAPPING/${SM}.${DI_old}.${j} -o $outputPath/2-MAPPING/${SM}.${DI_old}.sorted.bam >> $logPath/${SM}.${DI_old}.log";
+            system "samtools sort  $outputPath/2-MAPPING/${SM}.${DI_old}.bam -T $outputPath/2-MAPPING/${SM}.${DI_old}.${j} -o $outputPath/2-MAPPING/${SM}.${DI_old}.sorted.bam";
             system "echo \"sort finished for $SM $DI_old\" >>  $logPath/$SM\.log";
             system "echo `date` >> $logPath/$SM\.log";
             			      
-			      $new1=$DI."1";
+	    $new1=$DI."1";
             $new2=$DI."2";
             
             open ($new1, ">$outputPath/1-SPLIT/$SM/${DI}.1.fq") || die "$!\n";
             open ($new2, ">$outputPath/1-SPLIT/$SM/${DI}.2.fq") || die "$!\n";
             
-			      print $new1 "$line1\n";
+            print $new1 "$line1\n";
             print $new2 "$line2\n";
             
             $string.=" I="."$outputPath/2-MAPPING/${SM}.${DI_old}.sorted.bam ";
@@ -253,11 +261,11 @@ while (defined $line1)
 close $new1; close $new2; close IN1; close IN2;
  
 
-system "bwa mem -t 2 -R '\@RG\\tID:$ID\\tSM:$SM\\tPU:$PU\\tLB:$LB\\tPL:$PL' -M $hgRef/hg19 $outputPath/1-SPLIT/$SM/${DI}.1.fq $outputPath/1-SPLIT/$SM/${DI}.2.fq |samtools view -bS -o $outputPath/2-MAPPING/${SM}.${DI}.bam - >> $logPath/${SM}.${DI}.bwa.log";
+system "bwa mem -t 2 -R '\@RG\\tID:$DI\\tSM:$SM\\tPU:$PU\\tLB:$LB\\tPL:$PL' -M $hgRef/hg19.fa $outputPath/1-SPLIT/$SM/${DI}.1.fq $outputPath/1-SPLIT/$SM/${DI}.2.fq |samtools view -bS -o $outputPath/2-MAPPING/${SM}.${DI}.bam -";
 system "echo \"bwa finished for $SM $ID\" >>  $logPath/$SM\.log";
 system "echo `date` >> $logPath/$SM\.log";
             
-system "samtools sort  $outputPath/2-MAPPING/${SM}.${DI}.bam -T $outputPath/2-MAPPING/${SM}.${DI}.${j} -o $outputPath/2-MAPPING/${SM}.${DI}.sorted.bam >> $logPath/${SM}.${DI}.log";
+system "samtools sort  $outputPath/2-MAPPING/${SM}.${DI}.bam -T $outputPath/2-MAPPING/${SM}.${DI}.${j} -o $outputPath/2-MAPPING/${SM}.${DI}.sorted.bam";
 system "echo \"sort finished for $SM $DI\" >>  $logPath/$SM\.log";
 system "echo `date` >> $logPath/$SM\.log";
 
@@ -267,40 +275,40 @@ system "echo  \"the $SM was split into $j files\" >> $logPath/$SM\.log";
                    
 
 #system "samtools merge -nufr -b $outputPath/sorted.bamlist.txt --threads 4 -O $outputPath/2-MAPPING/$SM.bam >> $logPath/$SM.Samtools_merge\.log";
-system "java -jar $PICARDJAR MergeSamFiles $string OUTPUT=$outputPath/2-MAPPING/$SM.bam >> $logPath/$SM.picard_merge\.log";
+system "java -jar $PICARDJAR MergeSamFiles $string OUTPUT=$outputPath/2-MAPPING/$SM.bam";
 system "echo \"merge finished for $SM\" >>  $logPath/$SM\.log";
 system "echo `date` >> $logPath/$SM\.log";
 
 
 
-system "java -jar $PICARDJAR MarkDuplicates VALIDATION_STRINGENCY=SILENT INPUT=$outputPath/2-MAPPING/$SM.bam OUTPUT=$outputPath/3-PICARD/$SM\.marked.bam METRICS_FILE=$outputPath/3-PICARD/$SM.Mkdup.metrics >> $logPath/$SM.MarkDuplicates.log";
+system "java -jar $PICARDJAR MarkDuplicates VALIDATION_STRINGENCY=SILENT REMOVE_DUPLICATES=True INPUT=$outputPath/2-MAPPING/$SM.bam OUTPUT=$outputPath/3-PICARD/$SM\.marked.bam METRICS_FILE=$outputPath/3-PICARD/$SM.Mkdup.metrics";
 system "echo \"markduplicate finished for $SM\" >>  $logPath/$SM\.log";
 system "echo `date` >> $logPath/$SM.log";
 
-system "samtools index $outputPath/3-PICARD/$SM\.marked.bam >> $logPath/$SM.Index.markduplicates.log";
+system "samtools index $outputPath/3-PICARD/$SM\.marked.bam";
 system "echo \"samtools index finished for $SM\" >>  $logPath/$SM\.log";
 system "echo `date` >> $logPath/$SM.log";
 
 
 
     
-system "java -Xmx3g -jar $GATKJAR  -T RealignerTargetCreator -U ALLOW_N_CIGAR_READS -R $hgRef/hg19.fa -I $outputPath/3-PICARD/$SM.marked.bam -o $outputPath/4-GATK/$SM.marked.intervals -known $known1000G_indels -known $GoldStandard_indels >> $logPath/$SM.GATK.log";
+system "java -Xmx3g -jar $GATKJAR  -T RealignerTargetCreator -U ALLOW_N_CIGAR_READS -R $hgRef/hg19.fa -I $outputPath/3-PICARD/$SM.marked.bam -o $outputPath/4-GATK/$SM.marked.intervals -known $known1000G_indels -known $GoldStandard_indels --interval_padding 150 ";
 system "echo \"GATK Realinger finished  for $SM\" >>  $logPath/$SM\.log";
 system "echo `date` >> $logPath/$SM.log";
 
-system "java -Xmx3g -jar $GATKJAR -T IndelRealigner -R $hgRef/hg19.fa -I $outputPath/3-PICARD/$SM.marked.bam -targetIntervals $outputPath/4-GATK/$SM.marked.intervals -o $outputPath/4-GATK/$SM.marked.realn.bam -known $known1000G_indels -known $GoldStandard_indels >> $logPath/$SM.GATK.log";
+system "java -Xmx3g -jar $GATKJAR -T IndelRealigner -R $hgRef/hg19.fa -I $outputPath/3-PICARD/$SM.marked.bam -targetIntervals $outputPath/4-GATK/$SM.marked.intervals -o $outputPath/4-GATK/$SM.marked.realn.bam -known $known1000G_indels -known $GoldStandard_indels --interval_padding 150 -LOD 0.5";
 system "echo \"GATK Indel Realinger finished  for $SM\" >>  $logPath/$SM\.log";
 system "echo `date` >> $logPath/$SM\.log";
 
-system "java -Xmx4g -jar $GATKJAR -nct 2 -T BaseRecalibrator -R $hgRef/hg19.fa -I $outputPath/4-GATK/$SM.marked.realn.bam -o $outputPath/4-GATK/$SM.marked.realn.recal -knownSites $known1000G_indels -knownSites $GoldStandard_indels -knownSites $dbSNP >> $logPath/$SM.GATK.log";
+system "java -Xmx4g -jar $GATKJAR -nct 2 -T BaseRecalibrator -R $hgRef/hg19.fa -I $outputPath/4-GATK/$SM.marked.realn.bam -o $outputPath/4-GATK/$SM.marked.realn.recal -knownSites $known1000G_indels -knownSites $GoldStandard_indels -knownSites $dbSNP --interval_padding 150";
 system "echo \"GATK BaseRecalibrator finished  for $SM\" >>  $logPath/$SM\.log";
 system "echo `date` >> $logPath/$SM\.log";
 
-system "java -Xmx3g -jar $GATKJAR  -T PrintReads -R $hgRef/hg19.fa -I $outputPath/4-GATK/$SM.marked.realn.bam -o $outputPath/4-GATK/$SM.marked.realn.recal.bam --BQSR $outputPath/4-GATK/$SM.marked.realn.recal >> $logPath/$SM.GATK.log";
+system "java -Xmx3g -jar $GATKJAR  -T PrintReads -R $hgRef/hg19.fa -I $outputPath/4-GATK/$SM.marked.realn.bam -o $outputPath/4-GATK/$SM.marked.realn.recal.bam --BQSR $outputPath/4-GATK/$SM.marked.realn.recal --interval_padding 150";
 system "echo \"GATK PrintReads finished  for $SM\" >>  $logPath/$SM\.log";
 system "echo `date` >> $logPath/$SM\.log";
 
-system "java -Xmx3g -jar $GATKJAR -T HaplotypeCaller -R $hgRef/hg19.fa -L ${targets_interval_list} --dbsnp ${dbSNP} --emitRefConfidence GVCF -I $outputPath/4-GATK/$SM.marked.realn.recal.bam -o $outputPath/5-GERMLINE/$SM.marked.realn.recal.bam.g.vcf";
+system "java -Xmx3g -jar $GATKJAR -T HaplotypeCaller -R $hgRef/hg19.fa -L ${targets_interval_list} --dbsnp ${dbSNP} --emitRefConfidence GVCF -I $outputPath/4-GATK/$SM.marked.realn.recal.bam -o $outputPath/5-GERMLINE/$SM.marked.realn.recal.bam.g.vcf --interval_padding 150 PCR=\"CONSERVATIVE\"";
 system "echo \'GATK HaplotypeCaller finished  for $SM\' >>  $logPath/$SM\.log";
 system "echo `date` >> $logPath/$SM\.log";
 
