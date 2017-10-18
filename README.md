@@ -18,5 +18,5 @@ perl Pipeline_for_WES_with_PBS_test.pl --sampleInfo sampleInfo.txt
 This is the configure file which contain the sample id of all samples you cope with， one couple per line.such as:
 0116D01M200001A01_2101  0116D01M200001C01_2101
 ```
-
+这里做了一下改动
 
